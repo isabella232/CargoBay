@@ -1029,7 +1029,7 @@ restoreCompletedTransactionsFailedWithError:(NSError *)error
     dispatch_once(&onceToken, ^{
         _mutableRegisteredDelegates = [[NSMutableSet alloc] init];
     });
-
+    
     return _mutableRegisteredDelegates;
 }
 
@@ -1048,32 +1048,18 @@ restoreCompletedTransactionsFailedWithError:(NSError *)error
     if (!self) {
         return nil;
     }
-
-#if __has_feature(objc_arc_weak)
-    __weak __typeof(&*self)weakSelf = self;
-#endif
-
-    self.success = ^(NSArray *products, NSArray *invalidIdentifiers) {
+    
+    _success = [^(NSArray *products, NSArray *invalidIdentifiers) {
         if (success) {
             success(products, invalidIdentifiers);
         }
-
-#if __has_feature(objc_arc_weak)
-        __strong __typeof(&*weakSelf)strongSelf = weakSelf;
-        [[strongSelf class] unregisterDelegate:strongSelf];
-#endif
-    };
+    } copy];
     
-    self.failure = ^(NSError *error) {
+    _failure = [^(NSError *error) {
         if (failure) {
             failure(error);
         }
-        
-#if __has_feature(objc_arc_weak)
-        __strong __typeof(&*weakSelf)strongSelf = weakSelf;
-        [[strongSelf class] unregisterDelegate:strongSelf];
-#endif
-    };
+    } copy];
     
     
     return self;
@@ -1081,30 +1067,27 @@ restoreCompletedTransactionsFailedWithError:(NSError *)error
 
 #pragma mark - SKRequestDelegate
 
-- (void)request:(__unused SKRequest *)request
+- (void)request:(SKRequest *)request
 didFailWithError:(NSError *)error
 {
-#if !__has_feature(objc_arc_weak)
     [[self class] unregisterDelegate:self];
-#endif
-    if (self.failure) {
-        self.failure(error);
-    }    
+    if (_failure) {
+        _failure(error);
+    }
 }
 
-- (void)requestDidFinish:(__unused SKRequest *)request {
-#if !__has_feature(objc_arc_weak)
+- (void)requestDidFinish:(SKRequest *)request
+{
     [[self class] unregisterDelegate:self];
-#endif
 }
 
 #pragma mark - SKProductsRequestDelegate
 
-- (void)productsRequest:(__unused SKProductsRequest *)request
+- (void)productsRequest:(SKProductsRequest *)request
      didReceiveResponse:(SKProductsResponse *)response
 {
-    if (self.success) {
-        self.success(response.products, response.invalidProductIdentifiers);
+    if (_success) {
+        _success(response.products, response.invalidProductIdentifiers);
     }
 }
 
