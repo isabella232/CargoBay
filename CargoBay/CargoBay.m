@@ -1070,10 +1070,11 @@ restoreCompletedTransactionsFailedWithError:(NSError *)error
 - (void)request:(SKRequest *)request
 didFailWithError:(NSError *)error
 {
-    [[self class] unregisterDelegate:self];
+    
     if (_failure) {
         _failure(error);
     }
+		[[self class] unregisterDelegate:self];
 }
 
 - (void)requestDidFinish:(SKRequest *)request
